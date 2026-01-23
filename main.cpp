@@ -1,7 +1,7 @@
 #include "stm32f4xx.h"
 #include "sken_library/include.h"
 
-// --- ƒIƒuƒWƒFƒNƒgéŒ¾ ---
+// --- ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆå®£è¨€ ---
 Motor motor_FL, motor_FR, motor_BL, motor_BR;
 Encoder encoder_FL, encoder_FR, encoder_BL, encoder_BR;
 Encoder_data e_data_FL, e_data_FR, e_data_BL, e_data_BR;
@@ -9,26 +9,26 @@ Pid pid_FL, pid_FR, pid_BL, pid_BR;
 
 CanData relay_can_data;
 
-// --- §Œä—p•Ï” ---
-// –Ú•W’l (Še—Ö‚Ì–Ú•W‘¬“x mm/s)
+// --- åˆ¶å¾¡ç”¨å¤‰æ•° ---
+// ç›®æ¨™å€¤ (å„è¼ªã®ç›®æ¨™é€Ÿåº¦ mm/s)
 volatile double target_FL = 0, target_FR = 0, target_BL = 0, target_BR = 0;
-// PIDo—Í
+// PIDå‡ºåŠ›
 double out_FL = 0, out_FR = 0, out_BL = 0, out_BR = 0;
 
-// ƒƒ{ƒbƒg’è” (‹@‘Ì‚É‡‚í‚¹‚Ä’²®)
-const double R_L = 519.417; // ù‰ñ’¼Œa
-const double R = R_L / 2.0; // ƒƒ{ƒbƒg’†S‚©‚çÔ—Ö‚Ü‚Å‚Ì‹——£
+// ãƒ­ãƒœãƒƒãƒˆå®šæ•° (æ©Ÿä½“ã«åˆã‚ã›ã¦èª¿æ•´)
+const double R_L = 519.417; // æ—‹å›ç›´å¾„
+const double R = R_L / 2.0; // ãƒ­ãƒœãƒƒãƒˆä¸­å¿ƒã‹ã‚‰è»Šè¼ªã¾ã§ã®è·é›¢
 
-// --- ƒfƒoƒbƒOŠÄ‹—p ---
+// --- ãƒ‡ãƒãƒƒã‚°ç›£è¦–ç”¨ ---
 volatile uint32_t rx_count = 0;
 volatile int16_t debug_vx = 0, debug_vy = 0, debug_omega = 0;
 
-// 1ms‚²‚Æ‚ÉŒÄ‚Î‚ê‚é§ŒäE’ÊM‰ğÍƒ‹[ƒv
+// 1msã”ã¨ã«å‘¼ã°ã‚Œã‚‹åˆ¶å¾¡ãƒ»é€šä¿¡è§£æãƒ«ãƒ¼ãƒ—
 void control_loop() {
-    // 1. CANóM‰ğÍ
+    // 1. CANå—ä¿¡è§£æ
     if (relay_can_data.rx_stdid == 0x160) {
         rx_count++;
-        // ƒf[ƒ^‚Ì•œŒ³ (Big Endian‚ğ‘z’è)
+        // ãƒ‡ãƒ¼ã‚¿ã®å¾©å…ƒ (Big Endianã‚’æƒ³å®š)
         int16_t vy = (int16_t)((relay_can_data.rx_data[0] << 8) | relay_can_data.rx_data[1]);
         int16_t omega = (int16_t)((relay_can_data.rx_data[2] << 8) | relay_can_data.rx_data[3]);
         int16_t vx = (int16_t)((relay_can_data.rx_data[4] << 8) | relay_can_data.rx_data[5]);
@@ -37,24 +37,24 @@ void control_loop() {
         vy = vy / 10;
         debug_vx = vx; debug_vy = vy; debug_omega = omega;
 
-        // 2. ‹t‰^“®ŠwŒvZ (–Ú•W‘¬“x mm/s ‚Ö‚Ì•ª‰ğ)
-        // ”z’u: ‘O¶(FL), ‘O‰E(FR), Œã‰E(BR), Œã¶(BL) ‚Ì‡
+        // 2. é€†é‹å‹•å­¦è¨ˆç®— (ç›®æ¨™é€Ÿåº¦ mm/s ã¸ã®åˆ†è§£)
+        // é…ç½®: å‰å·¦(FL), å‰å³(FR), å¾Œå³(BR), å¾Œå·¦(BL) ã®é †
         target_FL = (double)( vx + vy + (omega * R / 100.0));
         target_FR = (double)(-vx + vy + (omega * R / 100.0));
         target_BR = (double)(-vx - vy + (omega * R / 100.0));
         target_BL = (double)( vx - vy + (omega * R / 100.0));
 
-        relay_can_data.rx_stdid = 0; // óMƒŠƒZƒbƒg
+        relay_can_data.rx_stdid = 0; // å—ä¿¡ãƒªã‚»ãƒƒãƒˆ
     }
 
-    // 3. ƒGƒ“ƒR[ƒ_XV
+    // 3. ã‚¨ãƒ³ã‚³ãƒ¼ãƒ€æ›´æ–°
     encoder_FL.interrupt(&e_data_FL);
     encoder_FR.interrupt(&e_data_FR);
     encoder_BL.interrupt(&e_data_BL);
     encoder_BR.interrupt(&e_data_BR);
 
-    // 4. PIDŒvZ (–Ú•W‘¬“x‚ÆŒ»İ‘¬“x e_data.volcity ‚ÅŒvZ)
-    // +35‚ÍƒtƒB[ƒhƒtƒHƒ[ƒh(“®‚«o‚µ‚Ì•â•)
+    // 4. PIDè¨ˆç®— (ç›®æ¨™é€Ÿåº¦ã¨ç¾åœ¨é€Ÿåº¦ e_data.volcity ã§è¨ˆç®—)
+    // +35ã¯ãƒ•ã‚£ãƒ¼ãƒ‰ãƒ•ã‚©ãƒ¯ãƒ¼ãƒ‰(å‹•ãå‡ºã—ã®è£œåŠ©)
     out_FL = pid_FL.control(target_FL, e_data_FL.volcity, 1) + (target_FL > 0 ? 35 : (target_FL < 0 ? -35 : 0));
     out_FR = pid_FR.control(target_FR, e_data_FR.volcity, 1) + (target_FR > 0 ? 35 : (target_FR < 0 ? -35 : 0));
     out_BL = pid_BL.control(target_BL, e_data_BL.volcity, 1) + (target_BL > 0 ? 35 : (target_BL < 0 ? -35 : 0));
@@ -64,9 +64,9 @@ void control_loop() {
 int main(void) {
     sken_system.init();
 
-    // --- ƒsƒ“‰Šú‰» (’ñ‹Ÿ‚³‚ê‚½İ’è‚ğ‚»‚Ì‚Ü‚Ü“K—p) ---
+    // --- ãƒ”ãƒ³åˆæœŸåŒ– (æä¾›ã•ã‚ŒãŸè¨­å®šã‚’ãã®ã¾ã¾é©ç”¨) ---
     motor_FL.init(Apin, B8, TIMER10, CH1); motor_FL.init(Bpin, B9, TIMER11, CH1);
-    encoder_FL.init(C6, C7, TIMER3); // BL‚ÌƒR[ƒh‚Æ¬“¯’ˆÓF’ñ‹Ÿƒsƒ“‚É‡‚í‚¹‚Ü‚µ‚½
+    encoder_FL.init(C6, C7, TIMER3); // BLã®ã‚³ãƒ¼ãƒ‰ã¨æ··åŒæ³¨æ„ï¼šæä¾›ãƒ”ãƒ³ã«åˆã‚ã›ã¾ã—ãŸ
 
     motor_FR.init(Apin, A6, TIMER13, CH1); motor_FR.init(Bpin, A7, TIMER14, CH1);
     encoder_FR.init(B6, B7, TIMER4);
@@ -77,22 +77,22 @@ int main(void) {
     motor_BR.init(Apin, B14, TIMER12, CH1); motor_BR.init(Bpin, B15, TIMER12, CH2);
     encoder_BR.init(A0, A1, TIMER5);
 
-    // --- §Œäİ’è ---
+    // --- åˆ¶å¾¡è¨­å®š ---
     pid_FL.setGain(0.01, 0.0, 0);
     pid_FR.setGain(0.01, 0.0, 0);
     pid_BL.setGain(0.01, 0.0, 0);
     pid_BR.setGain(0.01, 0.0, 0);
 
-    // --- CAN’ÊMİ’è (‘«‰ñ‚è‘¤: CAN1 A12/A11) ---
+    // --- CANé€šä¿¡è¨­å®š (è¶³å›ã‚Šå´: CAN1 A12/A11) ---
     sken_system.startCanCommunicate(A12, A11, CAN_1);
     sken_system.addCanRceiveInterruptFunc(CAN_1, &relay_can_data);
 
-    // üŠúŠ„‚è‚İŠJn
+    // å‘¨æœŸå‰²ã‚Šè¾¼ã¿é–‹å§‹
     sken_system.addTimerInterruptFunc(control_loop, 0, 1); // 1ms
 
     while (1) {
-        // Še—Ö‚Ì‰ñ“]•ûŒü‚ğ Motor.write ‚Å”½‰f
-        // ’ñ‹ŸƒR[ƒh‚Ì - / + ‚ÌŒü‚«‚ğŒp³
+        // å„è¼ªã®å›è»¢æ–¹å‘ã‚’ Motor.write ã§åæ˜ 
+        // æä¾›ã‚³ãƒ¼ãƒ‰ã® - / + ã®å‘ãã‚’ç¶™æ‰¿
         motor_FL.write(-out_FL);
         motor_FR.write(out_FR);
         motor_BL.write(-out_BL);
