@@ -35,9 +35,9 @@ void communication() {
             int16_t raw_vy = (int16_t)((can_data.rx_data[2] << 8) | can_data.rx_data[3]);
             int16_t raw_omega = (int16_t)((can_data.rx_data[4] << 8) | can_data.rx_data[5]);
 
-            VX = (double)raw_vx / 10.0;
-            VY = (double)raw_vy / 10.0;
-            deg_s = (double)raw_omega / 10.0;
+            VX = raw_vx;
+            VY = raw_vy;
+            deg_s = raw_omega;
         }
 
         // 次の受信のためにIDをクリア
@@ -47,8 +47,8 @@ void communication() {
 
 // --- メイン制御処理 (モーターを動かす) ---
 void main_interrupt() {
-    vx = VX;
-    vy = VY;
+    vy = VY / 10  ;
+    vx = VX / 10  ;
     vz = deg_s;
 
     // 4輪オムニホイールの制御実行
@@ -66,10 +66,10 @@ int main(void) {
     led.init(C13, INPUT_PULLUP);
 
     // --- モーターピン初期化 ---
-    asimawari.mtr_pin_init(BR, Apin, B14, TIMER8, CH2);
-    asimawari.mtr_pin_init(BR, Bpin, B15, TIMER8, CH3);
-    asimawari.mtr_pin_init(BL, Bpin, A8, TIMER1, CH1);
-    asimawari.mtr_pin_init(BL, Apin, A11, TIMER1, CH4);
+    asimawari.mtr_pin_init(BR, Apin, B14, TIMER12, CH1);
+    asimawari.mtr_pin_init(BR, Bpin, B15, TIMER12, CH2);
+    asimawari.mtr_pin_init(BL, Apin, A8, TIMER1, CH1);
+    asimawari.mtr_pin_init(BL, Bpin, A11, TIMER1, CH4);
     asimawari.mtr_pin_init(FR, Bpin, A6, TIMER13, CH1);
     asimawari.mtr_pin_init(FR, Apin, A7, TIMER14, CH1);
     asimawari.mtr_pin_init(FL, Bpin, B8, TIMER10, CH1);
@@ -82,19 +82,19 @@ int main(void) {
     asimawari.enc_pin_init(BR, A0, A1, TIMER5, 100);
 
     // --- PIDゲイン設定 ---
-    asimawari.pid_set(FR, 5, 0, 0);
-    asimawari.pid_set(FL, 5, 0, 0);
-    asimawari.pid_set(BR, 5, 0, 0);
-    asimawari.pid_set(BL, 5, 0, 0);
+    asimawari.pid_set(FR, 15, 0, 0);
+    asimawari.pid_set(FL, 15, 0, 0);
+    asimawari.pid_set(BR, 15, 0, 0);
+    asimawari.pid_set(BL, 15, 0, 0);
 
     // --- CAN2初期化 (中継機との接続用) ---
     // 配線: 中継機のB13/B12から足回り機のB13/B12へ
-    sken_system.startCanCommunicate(A12, A11, CAN_1);
-    sken_system.addCanRceiveInterruptFunc(CAN_1, &can_data);
+    sken_system.startCanCommunicate(B13, B12, CAN_2);
+    sken_system.addCanRceiveInterruptFunc(CAN_2, &can_data);
 
     // タイマー割り込み登録 (0:通信用1ms, 1:制御用10ms)
-    sken_system.addTimerInterruptFunc(communication, 0, 10);
-    sken_system.addTimerInterruptFunc(main_interrupt, 1, 10);
+    sken_system.addTimerInterruptFunc(communication, 0, 1);
+    sken_system.addTimerInterruptFunc(main_interrupt, 1, 1);
 
     while (true) {
         // メインループ
