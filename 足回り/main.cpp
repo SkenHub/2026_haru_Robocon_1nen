@@ -72,20 +72,20 @@ int main(void) {
     asimawari.mtr_pin_init(BL, Bpin, A11, TIMER1, CH4);
     asimawari.mtr_pin_init(FR, Bpin, A6, TIMER13, CH1);
     asimawari.mtr_pin_init(FR, Apin, A7, TIMER14, CH1);
-    asimawari.mtr_pin_init(FL, Bpin, B8, TIMER10, CH1);
-    asimawari.mtr_pin_init(FL, Apin, B9, TIMER11, CH1);
+    asimawari.mtr_pin_init(FL, Apin, B8, TIMER10, CH1);
+    asimawari.mtr_pin_init(FL, Bpin, B9, TIMER11, CH1);
 
     // --- エンコーダピン初期化 ---
-    asimawari.enc_pin_init(FL, C6, C7, TIMER3, 100);
+    asimawari.enc_pin_init(FL, C7, C6, TIMER3, 100);
     asimawari.enc_pin_init(FR, B6, B7, TIMER4, 100);
     asimawari.enc_pin_init(BL, B3, A5, TIMER2, 100);
     asimawari.enc_pin_init(BR, A0, A1, TIMER5, 100);
 
     // --- PIDゲイン設定 ---
-    asimawari.pid_set(FR, 15, 0, 0);
-    asimawari.pid_set(FL, 15, 0, 0);
-    asimawari.pid_set(BR, 15, 0, 0);
-    asimawari.pid_set(BL, 15, 0, 0);
+    asimawari.pid_set(FR, 10, 0, 0);
+    asimawari.pid_set(FL, 10, 0, 0);
+    asimawari.pid_set(BR, 10, 0, 0);
+    asimawari.pid_set(BL, 10, 0, 0);
 
     // --- CAN2初期化 (中継機との接続用) ---
     // 配線: 中継機のB13/B12から足回り機のB13/B12へ
