@@ -3,6 +3,7 @@
  *
  *  Created on: 2023/04/27
  *      Author: p1ing
+ *　ライブラリです
  */
 
 #include "asimawari.h"
@@ -121,3 +122,4 @@ void Asimawari::turn(Asimode asimode,double lx,double ly,double rx,double robot_
 DebugData Asimawari::get_debug_data(){
 	return debugdata;
 }
+
