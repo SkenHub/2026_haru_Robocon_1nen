@@ -15,6 +15,9 @@ Gpio led;
 // CubeMonitor監視用：必ず0で初期化
 uint32_t debug_rx_count = 0;
 uint32_t debug_last_id = 0;
+uint8_t A[8];
+uint8_t B[8];
+uint8_t C[8];
 
 double motor_target[4], motor_out[4],
     vx, vy, vz, speed, deg, deg_s, VX, VY;
@@ -39,7 +42,21 @@ void communication() {
             VY = raw_vy;
             deg_s = raw_omega;
         }
-
+        if (can_data.rx_stdid == 0x100) {
+        	for (int i = 0; i < 8; i++) {
+                A[i] = can_data.rx_data[i];
+        	}
+        }
+        if (can_data.rx_stdid == 0x101) {
+            for (int i = 0; i < 8; i++) {
+                B[i] = can_data.rx_data[i];
+            }
+        }
+        if (can_data.rx_stdid == 0x102) {
+            for (int i = 0; i < 8; i++) {
+                C[i] = can_data.rx_data[i];
+            }
+        }
         // 次の受信のためにIDをクリア
         can_data.rx_stdid = 0;
     }
@@ -47,9 +64,9 @@ void communication() {
 
 // --- メイン制御処理 (モーターを動かす) ---
 void main_interrupt() {
-    vy = VY / 10  ;
-    vx = VX / 10  ;
-    vz = deg_s;
+    vy = VY / 2; //スピード調整
+    vx = VX / 2;
+    vz = deg_s / 2;
 
     // 4輪オムニホイールの制御実行
     asimawari.turn(omuni4, vx, vy, vz, R_L/2, wheel_radius);
