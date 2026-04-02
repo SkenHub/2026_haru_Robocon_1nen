@@ -7,8 +7,10 @@
 // --- 変数宣言 ---
 Asimawari asimawari;
 DebugData debugdata;
-
 CanData can_data;
+Encoder encoder1 ,  encoder2, encoder3, encoder4;          // エンコーダオブジェクト
+Encoder_data e_data1, e_data2, e_data3, e_data4;       // 角度や速度を保存する構造体
+
 uint8_t sending_data[8], receiving_serial_data[8];
 Gpio led;
 
@@ -64,9 +66,9 @@ void communication() {
 
 // --- メイン制御処理 (モーターを動かす) ---
 void main_interrupt() {
-    vy = VY / 2; //スピード調整
-    vx = VX / 2;
-    vz = deg_s / 2;
+    vy = VY * 1.4; //スピード調整
+    vx = VX * 1.4;
+    vz = deg_s * 1.1;
 
     // 4輪オムニホイールの制御実行
     asimawari.turn(omuni4, vx, vy, vz, R_L/2, wheel_radius);
@@ -113,7 +115,7 @@ int main(void) {
     sken_system.addTimerInterruptFunc(communication, 0, 1);
     sken_system.addTimerInterruptFunc(main_interrupt, 1, 1);
 
+
     while (true) {
-        // メインループ
     }
 }
