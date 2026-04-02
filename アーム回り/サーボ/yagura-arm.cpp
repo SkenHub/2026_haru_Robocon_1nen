@@ -13,6 +13,8 @@ double   servo_val3 = 50.0;     // サーボ3に今出している命令値(%)
 int servo_state0 = 0;           // 0 or 1
 int servo_state1 = 0;
 int servo_state2 = 0;
+int last_b = 0;         // モーター3のエッジ判定用
+int count1 = 0;
 
 uint8_t last_button0 = 0;
 uint8_t last_button1 = 0;
@@ -95,18 +97,39 @@ int main(void)
                 }
                 last_button1 = monitor_rx4;
 
+                //　--- サーボリングの処理　---
 
-
-                if (last_button2 == 0 && monitor_rx3 == 1) {
+                /*if (last_button2 == 0 && monitor_rx3 == 1) {
                     servo_state2 = !servo_state2;
                     servo_val3 = (servo_state2 ? 210.0 : -30);
                     servo3.turn(servo_val3);
                 }
-                last_button2 = can100_rx[3];
+                last_button2 = can100_rx[3];*/
 
+                // --- サーボ3 (提案されたカウントアップ方式) ---
+                int now_b = can100_rx[0]; // 0x100のデータindex 2を使用
 
+                // 押された瞬間にカウントアップ（エッジ検出）
+                if (last_b == 0 && now_b == 1) {
+                	count1++;
+                }
+                last_b = now_b;
+                monitor_rx3 = now_b; // モニター用
+
+                // カウント数に応じてターゲットを決定
+                if (count1 % 2 != 0) {
+                	servo_val3 = 210; // 奇数回目
+                }
+                else {
+                	servo_val3 = -30; // 偶数回目
+                }
+
+                // サーボを動かす
+                servo3.turn(servo_val3);
+
+                // チャタリング防止のための短い待機
+               // sken_system.delayMillis(1);
      }
 }
-
 
 
